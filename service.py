@@ -1,9 +1,23 @@
+from datetime import datetime, timedelta
+
 import requests
 
 
 class HttpClient:
 
-    def data_list(self, state_name=None):
+    def __init__(self):
+        self.yesterday_dt = datetime.now() - timedelta(days=1)
+        self.yesterday = self.__dt_to_str__(self.yesterday_dt)
+
+    def __update_date_to_day_back__(self, days=1):
+        self.yesterday_dt = self.yesterday_dt - timedelta(days=days)
+        self.yesterday = self.__dt_to_str__(self.yesterday_dt)
+
+    @classmethod
+    def __dt_to_str__(cls, yesterday_dt):
+        return yesterday_dt.strftime("%Y-%m-%d")
+
+    def data_list(self, state_name=None, ):
         cookies = {
             'SERVERID': 'node1',
             '_ga': 'GA1.3.268957160.1709265770',
@@ -35,13 +49,19 @@ class HttpClient:
             'stateName': state_name or '-- All --',
             'apmcName': '-- Select APMCs --',
             'commodityName': '-- Select Commodity --',
-            'fromDate': '2024-02-29',
-            'toDate': '2024-02-29',
+            'fromDate': self.yesterday,
+            'toDate': self.yesterday,
         }
 
-        response = requests.post(
-            'https://enam.gov.in/web/Ajax_ctrl/trade_data_list', cookies=cookies, headers=headers, data=data
-        )
-        data = response.json()["data"]
+        for x in range(7):
+            try:
+                response = requests.post(
+                    'https://enam.gov.in/web/Ajax_ctrl/trade_data_list', cookies=cookies, headers=headers, data=data
+                )
+                data = response.json()["data"]
 
-        return data
+                return data
+            except Exception as exception:
+                print(exception)
+                if x == 6:
+                    raise exception
